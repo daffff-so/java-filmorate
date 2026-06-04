@@ -1,0 +1,27 @@
+### Создать фильм
+POST http://localhost:8080/films
+Content-Type: application/json
+
+{
+  "name": "Avatar",
+  "description": "A film about Pandora",
+  "releaseDate": "2009-12-10",
+  "duration": 160
+}
+
+### Получить все фильмы
+GET http://localhost:8080/films
+
+### Создать пользователя
+POST http://localhost:8080/users
+Content-Type: application/json
+
+{
+  "email": "user@mail.com",
+  "login": "userlogin",
+  "name": "",
+  "birthday": "2000-01-01"
+}
+
+### Получить всех пользователей
+GET http://localhost:8080/users
