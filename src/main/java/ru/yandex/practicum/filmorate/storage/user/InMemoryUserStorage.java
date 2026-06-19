@@ -1,12 +1,12 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class InMemoryUserStorage implements UserStorage {
@@ -22,23 +22,13 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-        if (user.getId() == null || !users.containsKey(user.getId())) {
-            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
-        }
-
         users.put(user.getId(), user);
         return user;
     }
 
     @Override
-    public User getById(Integer id) {
-        User user = users.get(id);
-
-        if (user == null) {
-            throw new NotFoundException("Пользователь с id=" + id + " не найден");
-        }
-
-        return user;
+    public Optional<User> getById(Integer id) {
+        return Optional.ofNullable(users.get(id));
     }
 
     @Override
@@ -48,10 +38,6 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public void delete(Integer id) {
-        if (!users.containsKey(id)) {
-            throw new NotFoundException("Пользователь с id=" + id + " не найден");
-        }
-
         users.remove(id);
     }
 }
