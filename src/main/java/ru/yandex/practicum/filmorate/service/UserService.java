@@ -1,12 +1,12 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -14,9 +14,14 @@ import java.util.List;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
+
+    public UserService(
+            @Qualifier("userDbStorage") UserStorage userStorage
+    ) {
+        this.userStorage = userStorage;
+    }
 
     public User createUser(User user) {
         validateUser(user);
@@ -45,46 +50,33 @@ public class UserService {
 
     public User addFriend(Integer userId, Integer friendId) {
         checkDifferentUsers(userId, friendId);
+        getUserById(userId);
+        getUserById(friendId);
 
-        User user = getUserById(userId);
-        User friend = getUserById(friendId);
-
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
-
-        return user;
+        userStorage.addFriend(userId, friendId);
+        return getUserById(userId);
     }
 
     public User removeFriend(Integer userId, Integer friendId) {
         checkDifferentUsers(userId, friendId);
+        getUserById(userId);
+        getUserById(friendId);
 
-        User user = getUserById(userId);
-        User friend = getUserById(friendId);
-
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
-
-        return user;
+        userStorage.removeFriend(userId, friendId);
+        return getUserById(userId);
     }
 
     public List<User> getFriends(Integer userId) {
-        User user = getUserById(userId);
-
-        return user.getFriends().stream()
-                .map(this::getUserById)
-                .toList();
+        getUserById(userId);
+        return userStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(Integer userId, Integer otherId) {
         checkDifferentUsers(userId, otherId);
+        getUserById(userId);
+        getUserById(otherId);
 
-        User user = getUserById(userId);
-        User otherUser = getUserById(otherId);
-
-        return user.getFriends().stream()
-                .filter(otherUser.getFriends()::contains)
-                .map(this::getUserById)
-                .toList();
+        return userStorage.getCommonFriends(userId, otherId);
     }
 
     private void validateUser(User user) {
