@@ -154,6 +154,13 @@ class DbStorageTest {
 
         assertThat(genreStorage.getById(100)).isEmpty();
         assertThat(mpaStorage.getById(100)).isEmpty();
+
+        assertThat(genreStorage.getByIds(List.of(1, 2)))
+                .extracting(Genre::getId)
+                .containsExactly(1, 2);
+
+        assertThat(genreStorage.getByIds(List.of()))
+                .isEmpty();
     }
 
     private User createUser(String email, String login) {
