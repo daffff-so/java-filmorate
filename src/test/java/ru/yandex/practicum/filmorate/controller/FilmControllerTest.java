@@ -10,6 +10,15 @@ import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
+import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
+
+import java.util.Optional;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,18 +30,32 @@ class FilmControllerTest {
     void setUp() {
         FilmStorage filmStorage = new InMemoryFilmStorage();
         UserStorage userStorage = new InMemoryUserStorage();
-        FilmService filmService = new FilmService(filmStorage, userStorage);
+        GenreStorage genreStorage = mock(GenreStorage.class);
+        MpaStorage mpaStorage = mock(MpaStorage.class);
+
+        when(mpaStorage.getById(1))
+                .thenReturn(Optional.of(new Mpa(1, "G")));
+
+        FilmService filmService = new FilmService(
+                filmStorage,
+                userStorage,
+                genreStorage,
+                mpaStorage
+        );
 
         controller = new FilmController(filmService);
     }
 
     @Test
     void shouldCreateValidFilm() {
+
         Film film = new Film();
         film.setName("Avatar");
         film.setDescription("Good film");
         film.setReleaseDate(LocalDate.of(2009, 12, 10));
         film.setDuration(160);
+
+        film.setMpa(new Mpa(1, "G"));
 
         Film createdFilm = controller.createFilm(film);
 
