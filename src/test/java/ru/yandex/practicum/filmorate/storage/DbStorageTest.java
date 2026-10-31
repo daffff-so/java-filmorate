@@ -5,10 +5,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
+import ru.yandex.practicum.filmorate.model.Event;
+import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.feed.FeedDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.genre.GenreDbStorage;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaDbStorage;
@@ -19,6 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 @JdbcTest
 @AutoConfigureTestDatabase
@@ -26,25 +31,29 @@ import static org.assertj.core.api.Assertions.assertThat;
         UserDbStorage.class,
         FilmDbStorage.class,
         GenreDbStorage.class,
-        MpaDbStorage.class
+        MpaDbStorage.class,
+        FeedDbStorage.class
 })
 class DbStorageTest {
     private final UserDbStorage userStorage;
     private final FilmDbStorage filmStorage;
     private final GenreDbStorage genreStorage;
     private final MpaDbStorage mpaStorage;
+    private final FeedDbStorage feedStorage;
 
     @Autowired
     DbStorageTest(
             UserDbStorage userStorage,
             FilmDbStorage filmStorage,
             GenreDbStorage genreStorage,
-            MpaDbStorage mpaStorage
+            MpaDbStorage mpaStorage,
+            FeedDbStorage feedStorage
     ) {
         this.userStorage = userStorage;
         this.filmStorage = filmStorage;
         this.genreStorage = genreStorage;
         this.mpaStorage = mpaStorage;
+        this.feedStorage = feedStorage;
     }
 
     @Test
@@ -161,6 +170,51 @@ class DbStorageTest {
 
         assertThat(genreStorage.getByIds(List.of()))
                 .isEmpty();
+    }
+
+    @Test
+    void shouldReturnOnlyUserEventsInOrder() {
+        User first = createUser("feed1@mail.ru", "feed1");
+        User second = createUser("feed2@mail.ru", "feed2");
+
+        Event e1 = feedStorage.add(event(first.getId(), EventType.FRIEND, Operation.ADD, second.getId(), 100L));
+        feedStorage.add(event(second.getId(), EventType.LIKE, Operation.ADD, 1, 150L));
+        Event e2 = feedStorage.add(event(first.getId(), EventType.LIKE, Operation.REMOVE, 7, 200L));
+
+        assertThat(e1.getEventId()).isPositive();
+        assertThat(feedStorage.getByUserId(first.getId()))
+                .extracting(Event::getEventId, Event::getEventType, Event::getOperation,
+                        Event::getEntityId, Event::getTimestamp, Event::getUserId)
+                .containsExactly(
+                        tuple(e1.getEventId(), EventType.FRIEND, Operation.ADD, second.getId(), 100L, first.getId()),
+                        tuple(e2.getEventId(), EventType.LIKE, Operation.REMOVE, 7, 200L, first.getId()));
+    }
+
+    @Test
+    void shouldReturnEmptyFeedForUserWithoutEvents() {
+        User user = createUser("empty@mail.ru", "empty");
+
+        assertThat(feedStorage.getByUserId(user.getId())).isEmpty();
+    }
+
+    @Test
+    void shouldDeleteEventsWithUser() {
+        User user = createUser("gone@mail.ru", "gone");
+        feedStorage.add(event(user.getId(), EventType.LIKE, Operation.ADD, 1, 1L));
+
+        userStorage.delete(user.getId());
+
+        assertThat(feedStorage.getByUserId(user.getId())).isEmpty();
+    }
+
+    private Event event(Integer userId, EventType eventType, Operation operation, Integer entityId, Long timestamp) {
+        return Event.builder()
+                .userId(userId)
+                .eventType(eventType)
+                .operation(operation)
+                .entityId(entityId)
+                .timestamp(timestamp)
+                .build();
     }
 
     private User createUser(String email, String login) {
