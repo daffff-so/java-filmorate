@@ -40,7 +40,7 @@ public interface FilmStorage {
                         || film.getReleaseDate().getYear() == year)
                 .sorted(Comparator.comparingInt(
                         (Film film) -> film.getLikes().size()
-                ).reversed())
+                ).reversed().thenComparing(Film::getId))
                 .limit(count)
                 .toList();
     }
