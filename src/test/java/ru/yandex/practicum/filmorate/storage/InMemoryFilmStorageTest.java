@@ -33,15 +33,39 @@ class InMemoryFilmStorageTest {
                 .extracting(Film::getId)
                 .containsExactly(d.getId(), a.getId());
 
-        List<Film> byGenre = filmStorage.getPopular(10, 1, null);
-        assertThat(byGenre.subList(0, 2))
+        assertThat(filmStorage.getPopular(10, 1, null))
                 .extracting(Film::getId)
-                .containsExactlyInAnyOrder(c.getId(), d.getId());
-        assertThat(byGenre.get(2).getId()).isEqualTo(a.getId());
+                .containsExactly(c.getId(), d.getId(), a.getId());
 
         assertThat(filmStorage.getPopular(1, null, 2000))
                 .extracting(Film::getId)
                 .containsExactly(b.getId());
+    }
+
+    @Test
+    void shouldOrderEqualLikesByIdInMemory() {
+        for (int i = 0; i < 17; i++) {
+            Film film = createFilm(LocalDate.of(2000, 6, 1), Set.of(1));
+            if (film.getId() != 2 && film.getId() != 17) {
+                filmStorage.delete(film.getId());
+            }
+        }
+
+        assertThat(filmStorage.getPopular(10, null, null))
+                .extracting(Film::getId)
+                .containsExactly(2, 17);
+    }
+
+    @Test
+    void shouldFilterByYearBoundariesInMemory() {
+        createFilm(LocalDate.of(1999, 12, 31), Set.of());
+        Film jan1 = createFilm(LocalDate.of(2000, 1, 1), Set.of());
+        Film dec31 = createFilm(LocalDate.of(2000, 12, 31), Set.of());
+        createFilm(LocalDate.of(2001, 1, 1), Set.of());
+
+        assertThat(filmStorage.getPopular(10, null, 2000))
+                .extracting(Film::getId)
+                .containsExactly(jan1.getId(), dec31.getId());
     }
 
     @Test

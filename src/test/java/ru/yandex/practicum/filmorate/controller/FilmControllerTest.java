@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -135,10 +136,21 @@ class FilmControllerTest {
 
     @Test
     void shouldRejectNonPositiveCountWithFilters() {
+        FilmStorage filmStorage = mock(FilmStorage.class);
+        FilmController controllerWithMock = new FilmController(
+                new FilmService(
+                        filmStorage,
+                        mock(UserStorage.class),
+                        mock(GenreStorage.class),
+                        mock(MpaStorage.class)
+                )
+        );
+
         assertThrows(ValidationException.class,
-                () -> controller.getPopularFilms(0, 1, 2000));
+                () -> controllerWithMock.getPopularFilms(0, 1, 2000));
         assertThrows(ValidationException.class,
-                () -> controller.getPopularFilms(-1, null, 2000));
+                () -> controllerWithMock.getPopularFilms(-1, null, 2000));
+        verifyNoInteractions(filmStorage);
     }
 
     @Test
