@@ -86,7 +86,11 @@ public class FilmService {
         return getFilmById(filmId);
     }
 
-    public List<Film> getPopularFilms(Integer count) {
+    public List<Film> getPopularFilms(
+            Integer count,
+            Integer genreId,
+            Integer year
+    ) {
         if (count == null) {
             count = 10;
         }
@@ -97,7 +101,7 @@ public class FilmService {
             );
         }
 
-        return filmStorage.getPopular(count);
+        return filmStorage.getPopular(count, genreId, year);
     }
 
     private User getUserById(Integer id) {
