@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
@@ -40,7 +41,8 @@ class FilmControllerTest {
                 filmStorage,
                 userStorage,
                 genreStorage,
-                mpaStorage
+                mpaStorage,
+                mock(FeedService.class)
         );
 
         controller = new FilmController(filmService);

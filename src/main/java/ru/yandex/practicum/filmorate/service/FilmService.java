@@ -3,11 +3,14 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
@@ -31,17 +34,20 @@ public class FilmService {
     private final UserStorage userStorage;
     private final GenreStorage genreStorage;
     private final MpaStorage mpaStorage;
+    private final FeedService feedService;
 
     public FilmService(
             @Qualifier("filmDbStorage") FilmStorage filmStorage,
             @Qualifier("userDbStorage") UserStorage userStorage,
             GenreStorage genreStorage,
-            MpaStorage mpaStorage
+            MpaStorage mpaStorage,
+            FeedService feedService
     ) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.genreStorage = genreStorage;
         this.mpaStorage = mpaStorage;
+        this.feedService = feedService;
     }
 
     public Film createFilm(Film film) {
@@ -70,19 +76,23 @@ public class FilmService {
                         ));
     }
 
+    @Transactional
     public Film addLike(Integer filmId, Integer userId) {
         getFilmById(filmId);
         getUserById(userId);
 
         filmStorage.addLike(filmId, userId);
+        feedService.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
         return getFilmById(filmId);
     }
 
+    @Transactional
     public Film removeLike(Integer filmId, Integer userId) {
         getFilmById(filmId);
         getUserById(userId);
 
         filmStorage.removeLike(filmId, userId);
+        feedService.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
         return getFilmById(filmId);
     }
 
