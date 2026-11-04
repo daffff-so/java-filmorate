@@ -207,6 +207,53 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    @Override
+    public List<Film> getRecommendations(Integer userId) {
+        List<Film> films = jdbcTemplate.query("""
+                SELECT f.film_id,
+                       f.name AS film_name,
+                       f.description,
+                       f.release_date,
+                       f.duration,
+                       m.mpa_id,
+                       m.name AS mpa_name
+                FROM films f
+                JOIN mpa m ON m.mpa_id = f.mpa_id
+                WHERE f.film_id IN (
+                    SELECT fl.film_id
+                    FROM film_likes fl
+                    WHERE fl.user_id IN (
+                        SELECT other.user_id
+                        FROM film_likes mine
+                        JOIN film_likes other
+                            ON other.film_id = mine.film_id
+                           AND other.user_id <> mine.user_id
+                        WHERE mine.user_id = ?
+                        GROUP BY other.user_id
+                        HAVING COUNT(*) = (
+                            SELECT MAX(common_count)
+                            FROM (
+                                SELECT COUNT(*) AS common_count
+                                FROM film_likes mine2
+                                JOIN film_likes other2
+                                    ON other2.film_id = mine2.film_id
+                                   AND other2.user_id <> mine2.user_id
+                                WHERE mine2.user_id = ?
+                                GROUP BY other2.user_id
+                            ) t
+                        )
+                    )
+                )
+                AND f.film_id NOT IN (
+                    SELECT film_id FROM film_likes WHERE user_id = ?
+                )
+                ORDER BY f.film_id
+                """, filmMapper, userId, userId, userId);
+
+        enrichFilms(films);
+        return films;
+    }
+
     private void saveGenres(Film film) {
         if (film.getGenres() == null
                 || film.getGenres().isEmpty()) {
