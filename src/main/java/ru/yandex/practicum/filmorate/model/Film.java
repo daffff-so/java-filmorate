@@ -17,6 +17,8 @@ public class Film {
     private Integer duration;
     private Mpa mpa;
     private Set<Genre> genres = new LinkedHashSet<>();
+    // Список режиссёров фильма без повторений
+    private Set<Director> directors = new LinkedHashSet<>();
 
     @JsonIgnore
     private Set<Integer> likes = new HashSet<>();
