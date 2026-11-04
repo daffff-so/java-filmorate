@@ -7,6 +7,8 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import static org.mockito.Mockito.mock;
 
 import java.time.LocalDate;
 
@@ -20,7 +22,7 @@ class UserControllerTest {
         UserStorage userStorage = new InMemoryUserStorage();
         UserService userService = new UserService(userStorage);
 
-        controller = new UserController(userService);
+        controller = new UserController(userService, mock(FilmService.class));
     }
 
     @Test

@@ -34,4 +34,8 @@ public interface FilmStorage {
                 .limit(count)
                 .toList();
     }
+
+    default List<Film> getRecommendations(Integer userId) {
+        return List.of();
+    }
 }
