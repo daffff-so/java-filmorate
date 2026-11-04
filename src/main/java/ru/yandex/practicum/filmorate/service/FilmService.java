@@ -70,6 +70,11 @@ public class FilmService {
                         ));
     }
 
+    public void deleteFilm(Integer id) {
+        getFilmById(id);
+        filmStorage.delete(id);
+    }
+
     public Film addLike(Integer filmId, Integer userId) {
         getFilmById(filmId);
         getUserById(userId);
