@@ -8,35 +8,35 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-// Интерфейс для хранения и управления фильмами.
+// Интерфейс для хранения и управления фильмами
 public interface FilmStorage {
 
-    // Создаёт новый фильм.
+    // Создаёт новый фильм
     Film create(Film film);
 
-    // Обновляет существующий фильм.
+    // Обновляет существующий фильм
     Film update(Film film);
 
-    // Возвращает фильм по идентификатору.
+    // Возвращает фильм по идентификатору
     Optional<Film> getById(Integer id);
 
-    // Возвращает все фильмы.
+    // Возвращает все фильмы
     Collection<Film> getAll();
 
-    // Удаляет фильм по идентификатору.
+    // Удаляет фильм по идентификатору
     void delete(Integer id);
 
-    // Добавляет лайк фильму.
+    // Добавляет лайк фильму
     default void addLike(Integer filmId, Integer userId) {
         getById(filmId).ifPresent(film -> film.getLikes().add(userId));
     }
 
-    // Удаляет лайк у фильма.
+    // Удаляет лайк у фильма
     default void removeLike(Integer filmId, Integer userId) {
         getById(filmId).ifPresent(film -> film.getLikes().remove(userId));
     }
 
-    // Возвращает популярные фильмы по количеству лайков.
+    // Возвращает популярные фильмы по количеству лайков
     default List<Film> getPopular(Integer count) {
         return getAll().stream()
                 .sorted(Comparator.comparingInt(
@@ -46,6 +46,6 @@ public interface FilmStorage {
                 .toList();
     }
 
-    // Возвращает фильмы режиссёра с сортировкой по году или лайкам.
+    // Возвращает фильмы режиссёра с сортировкой по году или лайкам
     List<Film> getByDirector(Integer directorId, String sortBy);
 }
