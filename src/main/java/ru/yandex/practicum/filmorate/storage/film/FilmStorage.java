@@ -2,10 +2,7 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public interface FilmStorage {
     Film create(Film film);
@@ -32,6 +29,16 @@ public interface FilmStorage {
                         (Film film) -> film.getLikes().size()
                 ).reversed())
                 .limit(count)
+                .toList();
+    }
+
+    default List<Film> searchByTitle(String query) {
+        String needle = query.toLowerCase(Locale.ROOT);
+        return getAll().stream()
+                .filter(film -> film.getName().toLowerCase(Locale.ROOT).contains(needle))
+                .sorted(Comparator.comparingInt((Film film) -> film.getLikes().size())
+                        .reversed()
+                        .thenComparing(Film::getId))
                 .toList();
     }
 }
