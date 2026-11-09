@@ -100,6 +100,12 @@ public class FilmService {
         return filmStorage.getPopular(count);
     }
 
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        getUserById(userId);
+        getUserById(friendId);
+        return filmStorage.getCommonFilms(userId, friendId);
+    }
+
     private User getUserById(Integer id) {
         return userStorage.getById(id)
                 .orElseThrow(() ->

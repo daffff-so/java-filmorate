@@ -34,4 +34,14 @@ public interface FilmStorage {
                 .limit(count)
                 .toList();
     }
+
+    default List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        return getAll().stream()
+                .filter(film -> film.getLikes().contains(userId)
+                        && film.getLikes().contains(friendId))
+                .sorted(Comparator.comparingInt((Film film) -> film.getLikes().size())
+                        .reversed()
+                        .thenComparing(Film::getId))
+                .toList();
+    }
 }
