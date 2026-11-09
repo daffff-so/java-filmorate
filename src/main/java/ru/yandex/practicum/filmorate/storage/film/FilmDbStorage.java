@@ -350,4 +350,38 @@ public class FilmDbStorage implements FilmStorage {
             Integer userId
     ) {
     }
+
+    @Override
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        List<Film> films = jdbcTemplate.query("""
+            SELECT f.film_id,
+                   f.name AS film_name,
+                   f.description,
+                   f.release_date,
+                   f.duration,
+                   m.mpa_id,
+                   m.name AS mpa_name
+            FROM films f
+            JOIN mpa m ON m.mpa_id = f.mpa_id
+            JOIN film_likes fl ON fl.film_id = f.film_id
+            WHERE EXISTS (
+                SELECT 1
+                FROM film_likes own_like
+                WHERE own_like.film_id = f.film_id
+                  AND own_like.user_id = ?
+            )
+              AND EXISTS (
+                SELECT 1
+                FROM film_likes other_like
+                WHERE other_like.film_id = f.film_id
+                  AND other_like.user_id = ?
+            )
+            GROUP BY f.film_id, f.name, f.description, f.release_date,
+                     f.duration, m.mpa_id, m.name
+            ORDER BY COUNT(fl.user_id) DESC, f.film_id
+            """, filmMapper, userId, friendId);
+
+        enrichFilms(films);
+        return films;
+    }
 }
