@@ -207,6 +207,34 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    @Override
+    public List<Film> searchByTitle(String query) {
+        String pattern = "%" + query
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_") + "%";
+
+        List<Film> films = jdbcTemplate.query("""
+            SELECT f.film_id,
+                   f.name AS film_name,
+                   f.description,
+                   f.release_date,
+                   f.duration,
+                   m.mpa_id,
+                   m.name AS mpa_name
+            FROM films f
+            JOIN mpa m ON m.mpa_id = f.mpa_id
+            LEFT JOIN film_likes fl ON fl.film_id = f.film_id
+            WHERE LOWER(f.name) LIKE LOWER(?) ESCAPE '!'
+            GROUP BY f.film_id, f.name, f.description, f.release_date,
+                     f.duration, m.mpa_id, m.name
+            ORDER BY COUNT(fl.user_id) DESC, f.film_id
+            """, filmMapper, pattern);
+
+        enrichFilms(films);
+        return films;
+    }
+
     private void saveGenres(Film film) {
         if (film.getGenres() == null
                 || film.getGenres().isEmpty()) {

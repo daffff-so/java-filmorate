@@ -100,6 +100,16 @@ public class FilmService {
         return filmStorage.getPopular(count);
     }
 
+    public List<Film> search(String query, String by) {
+        if (query.isBlank()) {
+            throw new ValidationException("Поисковый запрос не может быть пустым");
+        }
+        if (!"title".equals(by.strip())) {
+            throw new ValidationException("Сейчас доступен только поиск по названию");
+        }
+        return filmStorage.searchByTitle(query.strip());
+    }
+
     private User getUserById(Integer id) {
         return userStorage.getById(id)
                 .orElseThrow(() ->

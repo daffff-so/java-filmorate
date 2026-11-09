@@ -52,4 +52,10 @@ public class FilmController {
     public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") Integer count) {
         return filmService.getPopularFilms(count);
     }
+
+    @GetMapping("/search")
+    public List<Film> search(@RequestParam("query") String query,
+                             @RequestParam("by") String by) {
+        return filmService.search(query, by);
+    }
 }
