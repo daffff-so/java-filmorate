@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -23,6 +24,8 @@ class DirectorDbStorageTest {
     private DirectorDbStorage directors;
     @Autowired
     private FilmDbStorage films;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     void shouldCreateUpdateAndDeleteDirector() {
@@ -42,10 +45,16 @@ class DirectorDbStorageTest {
         Film recent = createFilm("Recent", 2020, director);
         assertThat(films.getById(old.getId()).orElseThrow().getDirectors())
                 .containsExactly(director);
+        jdbcTemplate.update("INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)",
+                "director-test@example.com", "director-viewer", "Viewer", LocalDate.of(1990, 1, 1));
+        Integer viewerId = jdbcTemplate.queryForObject(
+                "SELECT user_id FROM users WHERE email = ?", Integer.class, "director-test@example.com");
+        films.addLike(recent.getId(), viewerId);
+
         assertThat(films.getByDirector(director.getId(), "year"))
                 .extracting(Film::getId).containsExactly(old.getId(), recent.getId());
         assertThat(films.getByDirector(director.getId(), "likes"))
-                .extracting(Film::getId).containsExactly(old.getId(), recent.getId());
+                .extracting(Film::getId).containsExactly(recent.getId(), old.getId());
         old.setDirectors(new LinkedHashSet<>());
         films.update(old);
         assertThat(films.getByDirector(director.getId(), "year"))
