@@ -48,6 +48,13 @@ public class FilmController {
         return filmService.removeLike(id, userId);
     }
 
+    // Получает фильмы режиссёра с сортировкой по году выпуска или лайкам
+    @GetMapping("/director/{directorId}")
+    public List<Film> getFilmsByDirector(@PathVariable Integer directorId,
+                                         @RequestParam String sortBy) {
+        return filmService.getFilmsByDirector(directorId, sortBy);
+    }
+
     @GetMapping("/popular")
     public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") Integer count) {
         return filmService.getPopularFilms(count);

@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Director;
+import ru.yandex.practicum.filmorate.storage.director.DirectorStorage;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
@@ -31,17 +33,21 @@ public class FilmService {
     private final UserStorage userStorage;
     private final GenreStorage genreStorage;
     private final MpaStorage mpaStorage;
+    // Хранит ссылку на хранилище режиссёров
+    private final DirectorStorage directorStorage;
 
     public FilmService(
             @Qualifier("filmDbStorage") FilmStorage filmStorage,
             @Qualifier("userDbStorage") UserStorage userStorage,
             GenreStorage genreStorage,
-            MpaStorage mpaStorage
+            MpaStorage mpaStorage,
+            DirectorStorage directorStorage
     ) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.genreStorage = genreStorage;
         this.mpaStorage = mpaStorage;
+        this.directorStorage = directorStorage;
     }
 
     public Film createFilm(Film film) {
@@ -100,6 +106,17 @@ public class FilmService {
         return filmStorage.getPopular(count);
     }
 
+    // Возвращает фильмы режиссёра с сортировкой по году или лайкам
+    public List<Film> getFilmsByDirector(Integer directorId, String sortBy) {
+        if (!"year".equals(sortBy) && !"likes".equals(sortBy)) {
+            throw new ValidationException("sortBy должен быть year или likes");
+        }
+        if (directorStorage.getById(directorId).isEmpty()) {
+            throw new NotFoundException("Режиссёр с id=" + directorId + " не найден");
+        }
+        return filmStorage.getByDirector(directorId, sortBy);
+    }
+
     private User getUserById(Integer id) {
         return userStorage.getById(id)
                 .orElseThrow(() ->
@@ -152,6 +169,23 @@ public class FilmService {
         }
     }
 
+    // Проверяет существование режиссёров фильма
+    private void validateDirectors(Film film) {
+        if (film.getDirectors() == null) {
+            film.setDirectors(new LinkedHashSet<>());
+            return;
+        }
+        Set<Director> resolved = new LinkedHashSet<>();
+        for (Director director : film.getDirectors()) {
+            if (director == null || director.getId() == null) {
+                throw new NotFoundException("Указан режиссёр без идентификатора");
+            }
+            resolved.add(directorStorage.getById(director.getId()).orElseThrow(() ->
+                    new NotFoundException("Режиссёр с id=" + director.getId() + " не найден")));
+        }
+        film.setDirectors(resolved);
+    }
+
     private void validateReferences(Film film) {
         if (film.getMpa() == null || film.getMpa().getId() == null) {
             throw new NotFoundException("Рейтинг MPA не указан");
@@ -166,6 +200,8 @@ public class FilmService {
                         ));
 
         film.setMpa(mpa);
+
+        validateDirectors(film);
 
         if (film.getGenres() == null || film.getGenres().isEmpty()) {
             film.setGenres(new LinkedHashSet<>());
