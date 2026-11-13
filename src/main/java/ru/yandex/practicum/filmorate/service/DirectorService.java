@@ -55,5 +55,8 @@ public class DirectorService {
         if (director == null || director.getName() == null || director.getName().isBlank()) {
             throw new ValidationException("Имя режиссёра не может быть пустым");
         }
+        if (director.getName().length() > 255) {
+            throw new ValidationException("Имя режиссёра не может быть длиннее 255 символов");
+        }
     }
 }
