@@ -58,6 +58,7 @@ public class UserService {
         getUserById(id);          // если нет такого id, вылетит NotFoundException
         userStorage.delete(id);
     }
+
     @Transactional
     public User addFriend(Integer userId, Integer friendId) {
         checkDifferentUsers(userId, friendId);
