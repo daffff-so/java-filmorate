@@ -2,8 +2,11 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,11 +19,14 @@ import java.util.List;
 @Service
 public class UserService {
     private final UserStorage userStorage;
+    private final FeedService feedService;
 
     public UserService(
-            @Qualifier("userDbStorage") UserStorage userStorage
+            @Qualifier("userDbStorage") UserStorage userStorage,
+            FeedService feedService
     ) {
         this.userStorage = userStorage;
+        this.feedService = feedService;
     }
 
     public User createUser(User user) {
@@ -48,21 +54,25 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
     }
 
+    @Transactional
     public User addFriend(Integer userId, Integer friendId) {
         checkDifferentUsers(userId, friendId);
         getUserById(userId);
         getUserById(friendId);
 
         userStorage.addFriend(userId, friendId);
+        feedService.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
         return getUserById(userId);
     }
 
+    @Transactional
     public User removeFriend(Integer userId, Integer friendId) {
         checkDifferentUsers(userId, friendId);
         getUserById(userId);
         getUserById(friendId);
 
         userStorage.removeFriend(userId, friendId);
+        feedService.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
         return getUserById(userId);
     }
 

@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -179,8 +180,36 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getPopular(Integer count) {
-        List<Film> films = jdbcTemplate.query("""
+    public List<Film> getPopular(
+            Integer count,
+            Integer genreId,
+            Integer year
+    ) {
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (genreId != null) {
+            conditions.add("""
+                    EXISTS (SELECT 1
+                            FROM film_genres fg
+                            WHERE fg.film_id = f.film_id
+                              AND fg.genre_id = ?)
+                    """);
+            params.add(genreId);
+        }
+
+        if (year != null) {
+            conditions.add("EXTRACT(YEAR FROM f.release_date) = ?");
+            params.add(year);
+        }
+
+        String where = conditions.isEmpty()
+                ? ""
+                : "WHERE " + String.join(" AND ", conditions);
+
+        params.add(count);
+
+        String sql = """
                 SELECT f.film_id,
                        f.name AS film_name,
                        f.description,
@@ -192,6 +221,7 @@ public class FilmDbStorage implements FilmStorage {
                 JOIN mpa m ON m.mpa_id = f.mpa_id
                 LEFT JOIN film_likes fl
                     ON fl.film_id = f.film_id
+                %s
                 GROUP BY f.film_id,
                          f.name,
                          f.description,
@@ -201,7 +231,13 @@ public class FilmDbStorage implements FilmStorage {
                          m.name
                 ORDER BY COUNT(fl.user_id) DESC, f.film_id
                 LIMIT ?
-                """, filmMapper, count);
+                """.formatted(where);
+
+        List<Film> films = jdbcTemplate.query(
+                sql,
+                filmMapper,
+                params.toArray()
+        );
 
         enrichFilms(films);
         return films;
@@ -396,5 +432,39 @@ public class FilmDbStorage implements FilmStorage {
             Integer filmId,
             Integer userId
     ) {
+    }
+
+    @Override
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        List<Film> films = jdbcTemplate.query("""
+            SELECT f.film_id,
+                   f.name AS film_name,
+                   f.description,
+                   f.release_date,
+                   f.duration,
+                   m.mpa_id,
+                   m.name AS mpa_name
+            FROM films f
+            JOIN mpa m ON m.mpa_id = f.mpa_id
+            JOIN film_likes fl ON fl.film_id = f.film_id
+            WHERE EXISTS (
+                SELECT 1
+                FROM film_likes own_like
+                WHERE own_like.film_id = f.film_id
+                  AND own_like.user_id = ?
+            )
+              AND EXISTS (
+                SELECT 1
+                FROM film_likes other_like
+                WHERE other_like.film_id = f.film_id
+                  AND other_like.user_id = ?
+            )
+            GROUP BY f.film_id, f.name, f.description, f.release_date,
+                     f.duration, m.mpa_id, m.name
+            ORDER BY COUNT(fl.user_id) DESC, f.film_id
+            """, filmMapper, userId, friendId);
+
+        enrichFilms(films);
+        return films;
     }
 }
