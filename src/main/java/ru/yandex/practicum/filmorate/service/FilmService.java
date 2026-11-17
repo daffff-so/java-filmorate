@@ -120,6 +120,11 @@ public class FilmService {
         return filmStorage.getCommonFilms(userId, friendId);
     }
 
+    public List<Film> getRecommendations(Integer userId) {
+        getUserById(userId);
+        return filmStorage.getRecommendations(userId);
+    }
+
     private User getUserById(Integer id) {
         return userStorage.getById(id)
                 .orElseThrow(() ->

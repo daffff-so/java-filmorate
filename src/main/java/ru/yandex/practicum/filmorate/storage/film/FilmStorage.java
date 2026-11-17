@@ -54,4 +54,8 @@ public interface FilmStorage {
                         .thenComparing(Film::getId))
                 .toList();
     }
+
+    default List<Film> getRecommendations(Integer userId) {
+        return List.of();
+    }
 }

@@ -8,11 +8,12 @@ import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import static org.mockito.Mockito.mock;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 
 class UserControllerTest {
     private UserController controller;
@@ -23,7 +24,7 @@ class UserControllerTest {
         FeedService feedService = mock(FeedService.class);
         UserService userService = new UserService(userStorage, feedService);
 
-        controller = new UserController(userService, feedService);
+        controller = new UserController(userService, mock(FilmService.class), feedService);
     }
 
     @Test
