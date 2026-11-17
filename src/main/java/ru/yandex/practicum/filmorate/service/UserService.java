@@ -54,6 +54,11 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
     }
 
+    public void deleteUser(Integer id) {
+        getUserById(id);          // если нет такого id, вылетит NotFoundException
+        userStorage.delete(id);
+    }
+
     @Transactional
     public User addFriend(Integer userId, Integer friendId) {
         checkDifferentUsers(userId, friendId);

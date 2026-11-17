@@ -38,6 +38,12 @@ public class FilmController {
         return filmService.getFilmById(id);
     }
 
+    @DeleteMapping("/{id}")
+    public void deleteFilm(@PathVariable Integer id) {
+        log.info("Запрос на удаление фильма с id={}", id);
+        filmService.deleteFilm(id);
+    }
+
     @PutMapping("/{id}/like/{userId}")
     public Film addLike(@PathVariable Integer id, @PathVariable Integer userId) {
         return filmService.addLike(id, userId);
