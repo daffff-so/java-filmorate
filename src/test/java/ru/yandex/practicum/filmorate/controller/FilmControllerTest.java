@@ -144,7 +144,8 @@ class FilmControllerTest {
                         filmStorage,
                         mock(UserStorage.class),
                         mock(GenreStorage.class),
-                        mock(MpaStorage.class)
+                        mock(MpaStorage.class),
+                        mock(FeedService.class)
                 )
         );
 
