@@ -26,11 +26,21 @@ public interface FilmStorage {
         getById(filmId).ifPresent(film -> film.getLikes().remove(userId));
     }
 
-    default List<Film> getPopular(Integer count) {
+    default List<Film> getPopular(
+            Integer count,
+            Integer genreId,
+            Integer year
+    ) {
         return getAll().stream()
+                .filter(film -> genreId == null
+                        || film.getGenres() != null
+                        && film.getGenres().stream()
+                        .anyMatch(genre -> genreId.equals(genre.getId())))
+                .filter(film -> year == null
+                        || film.getReleaseDate().getYear() == year)
                 .sorted(Comparator.comparingInt(
                         (Film film) -> film.getLikes().size()
-                ).reversed())
+                ).reversed().thenComparing(Film::getId))
                 .limit(count)
                 .toList();
     }

@@ -127,7 +127,7 @@ class DbStorageTest {
 
         filmStorage.addLike(second.getId(), user.getId());
 
-        List<Film> popular = filmStorage.getPopular(10);
+        List<Film> popular = filmStorage.getPopular(10, null, null);
         assertThat(popular.getFirst().getId()).isEqualTo(second.getId());
 
         filmStorage.removeLike(second.getId(), user.getId());
@@ -136,6 +136,135 @@ class DbStorageTest {
                 .isPresent()
                 .hasValueSatisfying(film ->
                         assertThat(film.getLikes()).isEmpty());
+    }
+
+    @Test
+    void shouldFilterPopularByGenre() {
+        User first = createUser("first@mail.ru", "first");
+        User second = createUser("second@mail.ru", "second");
+        User third = createUser("third@mail.ru", "third");
+        Film comedyA = createFilm("Comedy A", LocalDate.of(2000, 1, 1), 1);
+        Film drama = createFilm("Drama", LocalDate.of(2000, 1, 1), 2);
+        Film comedyB = createFilm("Comedy B", LocalDate.of(2005, 1, 1), 1);
+        Film comedyC = createFilm("Comedy C", LocalDate.of(2005, 1, 1), 1);
+
+        like(drama, first, second, third);
+        like(comedyB, first, second);
+
+        assertThat(filmStorage.getPopular(10, 1, null))
+                .extracting(Film::getId)
+                .containsExactly(
+                        comedyB.getId(),
+                        comedyA.getId(),
+                        comedyC.getId()
+                );
+    }
+
+    @Test
+    void shouldFilterPopularByYear() {
+        User first = createUser("first@mail.ru", "first");
+        User second = createUser("second@mail.ru", "second");
+        User third = createUser("third@mail.ru", "third");
+        Film a = createFilm("A", LocalDate.of(2000, 6, 1), 1);
+        Film b = createFilm("B", LocalDate.of(2001, 6, 1), 1);
+        Film c = createFilm("C", LocalDate.of(2000, 6, 1), 1);
+
+        like(a, first);
+        like(b, first, second, third);
+        like(c, first, second);
+
+        assertThat(filmStorage.getPopular(10, null, 2000))
+                .extracting(Film::getId)
+                .containsExactly(c.getId(), a.getId());
+    }
+
+    @Test
+    void shouldFilterPopularByGenreAndYear() {
+        User first = createUser("first@mail.ru", "first");
+        User second = createUser("second@mail.ru", "second");
+        User third = createUser("third@mail.ru", "third");
+        Film match = createFilm("Match", LocalDate.of(2000, 6, 1), 1);
+        Film wrongYear = createFilm("Wrong year", LocalDate.of(2001, 6, 1), 1);
+        Film wrongGenre = createFilm("Wrong genre", LocalDate.of(2000, 6, 1), 2);
+        Film match2 = createFilm("Match 2", LocalDate.of(2000, 6, 1), 1, 2);
+
+        like(match, first);
+        like(wrongYear, first, second, third);
+        like(wrongGenre, first, second, third);
+        like(match2, first, second);
+
+        assertThat(filmStorage.getPopular(10, 1, 2000))
+                .extracting(Film::getId)
+                .containsExactly(match2.getId(), match.getId());
+    }
+
+    @Test
+    void shouldApplyCountAfterFilters() {
+        User first = createUser("first@mail.ru", "first");
+        User second = createUser("second@mail.ru", "second");
+        User third = createUser("third@mail.ru", "third");
+        Film top = createFilm("Top", LocalDate.of(2000, 6, 1), 2);
+        Film comedy = createFilm("Comedy", LocalDate.of(2000, 6, 1), 1);
+        createFilm("Comedy 2", LocalDate.of(2000, 6, 1), 1);
+
+        like(top, first, second, third);
+        like(comedy, first);
+
+        assertThat(filmStorage.getPopular(1, 1, null))
+                .extracting(Film::getId)
+                .containsExactly(comedy.getId());
+
+        assertThat(filmStorage.getPopular(1, null, 2000))
+                .extracting(Film::getId)
+                .containsExactly(top.getId());
+    }
+
+    @Test
+    void shouldNotDuplicateOrInflateMultiGenreFilm() {
+        User first = createUser("first@mail.ru", "first");
+        User second = createUser("second@mail.ru", "second");
+        User third = createUser("third@mail.ru", "third");
+        Film multi = createFilm("Multi", LocalDate.of(2000, 6, 1), 1, 2, 3);
+        Film single = createFilm("Single", LocalDate.of(2000, 6, 1), 1);
+
+        like(multi, first, second);
+        like(single, first, second, third);
+
+        List<Film> popular = filmStorage.getPopular(10, 1, null);
+
+        assertThat(popular)
+                .extracting(Film::getId)
+                .containsExactly(single.getId(), multi.getId());
+        assertThat(popular.get(1).getGenres())
+                .extracting(Genre::getId)
+                .containsExactly(1, 2, 3);
+        assertThat(popular.get(1).getLikes()).hasSize(2);
+
+        assertThat(filmStorage.getPopular(10, null, null))
+                .extracting(Film::getId)
+                .containsExactly(single.getId(), multi.getId());
+    }
+
+    @Test
+    void shouldFilterByYearBoundaries() {
+        createFilm("Before", LocalDate.of(1999, 12, 31), 1);
+        Film jan1 = createFilm("Jan 1", LocalDate.of(2000, 1, 1), 1);
+        Film dec31 = createFilm("Dec 31", LocalDate.of(2000, 12, 31), 1);
+        createFilm("After", LocalDate.of(2001, 1, 1), 1);
+
+        assertThat(filmStorage.getPopular(10, null, 2000))
+                .extracting(Film::getId)
+                .containsExactly(jan1.getId(), dec31.getId());
+    }
+
+    @Test
+    void shouldReturnEmptyForUnknownGenreOrYearWithoutFilms() {
+        createFilm("Comedy", LocalDate.of(2000, 6, 1), 1);
+
+        assertThat(filmStorage.getPopular(10, 999, null)).isEmpty();
+        assertThat(filmStorage.getPopular(10, null, 1990)).isEmpty();
+        assertThat(filmStorage.getPopular(10, 3, null)).isEmpty();
+        assertThat(filmStorage.getPopular(10, 1, 1990)).isEmpty();
     }
 
     @Test
@@ -184,5 +313,32 @@ class DbStorageTest {
                 new Genre(2, null)
         )));
         return filmStorage.create(film);
+    }
+
+    private Film createFilm(
+            String name,
+            LocalDate releaseDate,
+            Integer... genreIds
+    ) {
+        Film film = new Film();
+        film.setName(name);
+        film.setDescription("Description");
+        film.setReleaseDate(releaseDate);
+        film.setDuration(100);
+        film.setMpa(new Mpa(2, null));
+
+        LinkedHashSet<Genre> genres = new LinkedHashSet<>();
+        for (Integer genreId : genreIds) {
+            genres.add(new Genre(genreId, null));
+        }
+        film.setGenres(genres);
+
+        return filmStorage.create(film);
+    }
+
+    private void like(Film film, User... users) {
+        for (User user : users) {
+            filmStorage.addLike(film.getId(), user.getId());
+        }
     }
 }
