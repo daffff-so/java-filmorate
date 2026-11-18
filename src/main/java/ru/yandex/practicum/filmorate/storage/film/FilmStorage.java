@@ -38,14 +38,39 @@ public interface FilmStorage {
 
     // Возвращает популярные фильмы по количеству лайков
     default List<Film> getPopular(Integer count) {
+    default List<Film> getPopular(
+            Integer count,
+            Integer genreId,
+            Integer year
+    ) {
         return getAll().stream()
+                .filter(film -> genreId == null
+                        || film.getGenres() != null
+                        && film.getGenres().stream()
+                        .anyMatch(genre -> genreId.equals(genre.getId())))
+                .filter(film -> year == null
+                        || film.getReleaseDate().getYear() == year)
                 .sorted(Comparator.comparingInt(
                         (Film film) -> film.getLikes().size()
-                ).reversed())
+                ).reversed().thenComparing(Film::getId))
                 .limit(count)
                 .toList();
     }
 
     // Возвращает фильмы режиссёра с сортировкой по году или лайкам
     List<Film> getByDirector(Integer directorId, String sortBy);
+}
+    default List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        return getAll().stream()
+                .filter(film -> film.getLikes().contains(userId)
+                        && film.getLikes().contains(friendId))
+                .sorted(Comparator.comparingInt((Film film) -> film.getLikes().size())
+                        .reversed()
+                        .thenComparing(Film::getId))
+                .toList();
+    }
+
+    default List<Film> getRecommendations(Integer userId) {
+        return List.of();
+    }
 }
