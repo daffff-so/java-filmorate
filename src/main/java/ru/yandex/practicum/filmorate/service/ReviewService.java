@@ -4,8 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.review.ReviewStorage;
@@ -24,25 +27,34 @@ public class ReviewService {
     @Qualifier("userDbStorage")
     private final UserStorage userStorage;
     private final ReviewStorage reviewStorage;
+    private final FeedService feedService;
 
+    @Transactional
     public Review create(Review review) {
         checkReviewFields(review);
         checkFilmId(review.getFilmId());
         checkUserId(review.getUserId());
-        return reviewStorage.create(review);
+        Review created = reviewStorage.create(review);
+        feedService.addEvent(created.getUserId(), EventType.REVIEW, Operation.ADD, created.getId());
+        return created;
     }
 
+    @Transactional
     public Review update(Review review) {
-        checkReviewId(review.getId());
+        Review existing = getById(review.getId());
         checkReviewFields(review);
-        checkFilmId(review.getFilmId());
-        checkUserId(review.getUserId());
-        return reviewStorage.update(review);
+        review.setUserId(existing.getUserId());
+        review.setFilmId(existing.getFilmId());
+        Review updated = reviewStorage.update(review);
+        feedService.addEvent(updated.getUserId(), EventType.REVIEW, Operation.UPDATE, updated.getId());
+        return updated;
     }
 
+    @Transactional
     public void delete(Integer reviewId) {
-        checkReviewId(reviewId);
+        Review existing = getById(reviewId);
         reviewStorage.delete(reviewId);
+        feedService.addEvent(existing.getUserId(), EventType.REVIEW, Operation.REMOVE, reviewId);
     }
 
     public Review getById(Integer reviewId) {
