@@ -96,7 +96,7 @@ class ReviewIntegrationTest {
                 .andExpect(status().isBadRequest());
         mvc.perform(delete("/reviews/999999")).andExpect(status().isNotFound());
         mvc.perform(post("/reviews").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(Map.of(
-                        "content", "Invalid film", "isPositive", true, "userId", 21001, "filmId", 999999)))
+                        "content", "Invalid film", "isPositive", true, "userId", 21001, "filmId", 999999))))
                 .andExpect(status().isNotFound());
         mvc.perform(get("/users/21001/feed"))
                 .andExpect(status().isOk())
@@ -106,7 +106,7 @@ class ReviewIntegrationTest {
 
     private int createReview() throws Exception {
         String response = mvc.perform(post("/reviews").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(Map.of(
-                        "content", "Original", "isPositive", true, "userId", 21001, "filmId", 21001)))
+                        "content", "Original", "isPositive", true, "userId", 21001, "filmId", 21001))))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         JsonNode review = mapper.readTree(response);
         return review.get("reviewId").asInt();
