@@ -12,6 +12,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -41,9 +43,8 @@ class ReviewIntegrationTest {
         int id = createReview();
         mvc.perform(put("/reviews/{id}/like/{userId}", id, 21002)).andExpect(status().isOk());
 
-        mvc.perform(put("/reviews").contentType(MediaType.APPLICATION_JSON).content("""
-                        {"reviewId":%d,"content":"Updated","isPositive":false,"userId":21002,"filmId":21002}
-                        """.formatted(id)))
+        mvc.perform(put("/reviews").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(Map.of(
+                        "reviewId", id, "content", "Updated", "isPositive", false, "userId", 21002, "filmId", 21002))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(21001))
                 .andExpect(jsonPath("$.filmId").value(21001))
@@ -66,9 +67,8 @@ class ReviewIntegrationTest {
     @Test
     void reviewLifecycleWritesEventsForOriginalAuthor() throws Exception {
         int id = createReview();
-        mvc.perform(put("/reviews").contentType(MediaType.APPLICATION_JSON).content("""
-                        {"reviewId":%d,"content":"Updated","isPositive":false}
-                        """.formatted(id)))
+        mvc.perform(put("/reviews").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(Map.of(
+                        "reviewId", id, "content", "Updated", "isPositive", false))))
                 .andExpect(status().isOk());
         mvc.perform(delete("/reviews/{id}", id)).andExpect(status().isOk());
         mvc.perform(get("/reviews/{id}", id)).andExpect(status().isNotFound());
@@ -91,14 +91,12 @@ class ReviewIntegrationTest {
     @Test
     void failedOperationsDoNotWriteEvents() throws Exception {
         int id = createReview();
-        mvc.perform(put("/reviews").contentType(MediaType.APPLICATION_JSON).content("""
-                        {"reviewId":%d,"content":"","isPositive":true}
-                        """.formatted(id)))
+        mvc.perform(put("/reviews").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(Map.of(
+                        "reviewId", id, "content", "", "isPositive", true))))
                 .andExpect(status().isBadRequest());
         mvc.perform(delete("/reviews/999999")).andExpect(status().isNotFound());
-        mvc.perform(post("/reviews").contentType(MediaType.APPLICATION_JSON).content("""
-                        {"content":"Invalid film","isPositive":true,"userId":21001,"filmId":999999}
-                        """))
+        mvc.perform(post("/reviews").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(Map.of(
+                        "content", "Invalid film", "isPositive", true, "userId", 21001, "filmId", 999999)))
                 .andExpect(status().isNotFound());
         mvc.perform(get("/users/21001/feed"))
                 .andExpect(status().isOk())
@@ -107,9 +105,8 @@ class ReviewIntegrationTest {
     }
 
     private int createReview() throws Exception {
-        String response = mvc.perform(post("/reviews").contentType(MediaType.APPLICATION_JSON).content("""
-                        {"content":"Original","isPositive":true,"userId":21001,"filmId":21001}
-                        """))
+        String response = mvc.perform(post("/reviews").contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(Map.of(
+                        "content", "Original", "isPositive", true, "userId", 21001, "filmId", 21001)))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         JsonNode review = mapper.readTree(response);
         return review.get("reviewId").asInt();
