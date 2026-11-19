@@ -4,9 +4,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import static org.mockito.Mockito.mock;
 
 import java.time.LocalDate;
 
@@ -18,9 +21,10 @@ class UserControllerTest {
     @BeforeEach
     void setUp() {
         UserStorage userStorage = new InMemoryUserStorage();
-        UserService userService = new UserService(userStorage);
+        FeedService feedService = mock(FeedService.class);
+        UserService userService = new UserService(userStorage, feedService);
 
-        controller = new UserController(userService);
+        controller = new UserController(userService, mock(FilmService.class), feedService);
     }
 
     @Test
