@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
+import ru.yandex.practicum.filmorate.storage.director.DirectorStorage;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -39,6 +40,7 @@ class FilmControllerTest {
         UserStorage userStorage = new InMemoryUserStorage();
         GenreStorage genreStorage = mock(GenreStorage.class);
         MpaStorage mpaStorage = mock(MpaStorage.class);
+        DirectorStorage directorStorage = mock(DirectorStorage.class);
 
         when(mpaStorage.getById(1))
                 .thenReturn(Optional.of(new Mpa(1, "G")));
@@ -56,6 +58,7 @@ class FilmControllerTest {
                 userStorage,
                 genreStorage,
                 mpaStorage,
+                directorStorage,
                 mock(FeedService.class)
         );
 
@@ -145,6 +148,7 @@ class FilmControllerTest {
                         mock(UserStorage.class),
                         mock(GenreStorage.class),
                         mock(MpaStorage.class),
+                        mock(DirectorStorage.class),
                         mock(FeedService.class)
                 )
         );
