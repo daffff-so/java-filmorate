@@ -493,7 +493,6 @@ public class FilmDbStorage implements FilmStorage {
             Integer userId
     ) {
     }
-}
 
     @Override
     public List<Film> getCommonFilms(Integer userId, Integer friendId) {
