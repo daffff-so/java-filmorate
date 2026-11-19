@@ -45,7 +45,7 @@ public class FilmService {
             @Qualifier("userDbStorage") UserStorage userStorage,
             GenreStorage genreStorage,
             MpaStorage mpaStorage,
-            DirectorStorage directorStorage
+            DirectorStorage directorStorage,
             FeedService feedService
     ) {
         this.filmStorage = filmStorage;
