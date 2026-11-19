@@ -6,6 +6,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 // Интерфейс для хранения и управления фильмами
@@ -72,4 +73,17 @@ public interface FilmStorage {
     default List<Film> getRecommendations(Integer userId) {
         return List.of();
     }
+
+    default List<Film> search(String query, boolean byTitle, boolean byDirector) {
+        String needle = query.toLowerCase(Locale.ROOT);
+        return getAll().stream()
+                .filter(film -> (byTitle && film.getName().toLowerCase(Locale.ROOT).contains(needle))
+                        || (byDirector && film.getDirectors() != null && film.getDirectors().stream()
+                        .anyMatch(director -> director.getName().toLowerCase(Locale.ROOT).contains(needle))))
+                .sorted(Comparator.comparingInt((Film film) -> film.getLikes().size())
+                        .reversed()
+                        .thenComparing(Film::getId))
+                .toList();
+    }
+
 }

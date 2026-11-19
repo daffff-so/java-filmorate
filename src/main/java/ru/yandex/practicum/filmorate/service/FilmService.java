@@ -267,4 +267,17 @@ public class FilmService {
 
         film.setGenres(new LinkedHashSet<>(existingGenres));
     }
+
+    public List<Film> search(String query, String by) {
+        Set<String> fields = new java.util.HashSet<>();
+        for (String field : by.split(",", -1)) {
+            String name = field.strip();
+            if (!"title".equals(name) && !"director".equals(name)) {
+                throw new ValidationException("Параметр by должен содержать title или director");
+            }
+            fields.add(name);
+        }
+        return filmStorage.search(query, fields.contains("title"), fields.contains("director"));
+    }
+
 }

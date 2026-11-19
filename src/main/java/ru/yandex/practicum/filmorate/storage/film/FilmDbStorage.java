@@ -527,4 +527,38 @@ public class FilmDbStorage implements FilmStorage {
         enrichFilms(films);
         return films;
     }
+
+    @Override
+    public List<Film> search(String query, boolean byTitle, boolean byDirector) {
+        String pattern = "%" + query
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_") + "%";
+        List<Film> films = jdbcTemplate.query("""
+                SELECT f.film_id,
+                       f.name AS film_name,
+                       f.description,
+                       f.release_date,
+                       f.duration,
+                       m.mpa_id,
+                       m.name AS mpa_name
+                FROM films f
+                JOIN mpa m ON m.mpa_id = f.mpa_id
+                LEFT JOIN film_likes fl ON fl.film_id = f.film_id
+                WHERE (? AND LOWER(f.name) LIKE LOWER(?) ESCAPE '!')
+                   OR (? AND EXISTS (
+                       SELECT 1
+                       FROM film_directors fd
+                       JOIN directors d ON d.director_id = fd.director_id
+                       WHERE fd.film_id = f.film_id
+                         AND LOWER(d.name) LIKE LOWER(?) ESCAPE '!'
+                   ))
+                GROUP BY f.film_id, f.name, f.description, f.release_date,
+                         f.duration, m.mpa_id, m.name
+                ORDER BY COUNT(fl.user_id) DESC, f.film_id
+                """, filmMapper, byTitle, pattern, byDirector, pattern);
+        enrichFilms(films);
+        return films;
+    }
+
 }
