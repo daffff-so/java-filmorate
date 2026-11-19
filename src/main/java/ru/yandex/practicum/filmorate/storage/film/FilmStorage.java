@@ -37,7 +37,6 @@ public interface FilmStorage {
     }
 
     // Возвращает популярные фильмы по количеству лайков
-    default List<Film> getPopular(Integer count) {
     default List<Film> getPopular(
             Integer count,
             Integer genreId,
@@ -59,7 +58,7 @@ public interface FilmStorage {
 
     // Возвращает фильмы режиссёра с сортировкой по году или лайкам
     List<Film> getByDirector(Integer directorId, String sortBy);
-}
+
     default List<Film> getCommonFilms(Integer userId, Integer friendId) {
         return getAll().stream()
                 .filter(film -> film.getLikes().contains(userId)
